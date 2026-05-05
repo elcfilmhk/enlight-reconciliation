@@ -18,7 +18,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 1: Active Service Points (EANL)
-  SELECT COUNT(DISTINCT eanl~anlage) INTO @DATA(lv_sp_count)
+  SELECT COUNT (DISTINCT eanl~anlage) INTO @DATA(lv_sp_count)
     FROM eanl
     INNER JOIN iflot ON eanl~vstelle = iflot~vstelle
     WHERE eanl~loevm = ' '
@@ -30,7 +30,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Service Point with Device
-  SELECT COUNT(DISTINCT eanl~anlage) INTO @DATA(lv_sp_device)
+  SELECT COUNT (DISTINCT eanl~anlage) INTO @DATA(lv_sp_device)
     FROM eanl
     INNER JOIN eastl ON eanl~anlage = eastl~anlage
     INNER JOIN egerh ON eastl~logiknr = egerh~logiknr
@@ -42,7 +42,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Total EANL records
-  SELECT COUNT(*) INTO @DATA(lv_total_eanl)
+  SELECT COUNT (*) INTO @DATA(lv_total_eanl)
     FROM eanl
     WHERE loevm = ' '.
 
