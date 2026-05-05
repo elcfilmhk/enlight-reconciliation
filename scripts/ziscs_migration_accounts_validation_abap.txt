@@ -34,6 +34,19 @@ DATA: lv_current_date TYPE sy-datum,
       lv_total_ca TYPE p,
       lv_total_bp TYPE p.
 
+* Internal tables for deduplicated counts
+TYPES: BEGIN OF ty_vkont,
+         vkont TYPE fkkvkp-vkont,
+       END OF ty_vkont,
+       BEGIN OF ty_partner,
+         partner TYPE but000-partner,
+       END OF ty_partner.
+
+DATA: lt_all_ca TYPE STANDARD TABLE OF ty_vkont,
+      lt_all_bp TYPE STANDARD TABLE OF ty_partner,
+      lv_dist_ca TYPE p,
+      lv_dist_bp TYPE p.
+
 START-OF-SELECTION.
 
   lv_current_date = p_keydat.
@@ -68,6 +81,16 @@ START-OF-SELECTION.
     INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
     WHERE ever~auszdat GE lv_current_date.
 
+* Collect for deduplication
+  SELECT DISTINCT ever~vkonto AS vkont INTO TABLE lt_all_ca
+    FROM ever
+    WHERE ever~auszdat GE lv_current_date.
+
+  SELECT DISTINCT fkkvkp~gpart AS partner INTO TABLE lt_all_bp
+    FROM ever
+    INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
+    WHERE ever~auszdat GE lv_current_date.
+
   WRITE: / 'Rule 1: Active Accounts'.
   WRITE: / '  CA Count:', lv_r1_ca, '  BP Count:', lv_r1_bp.
   SKIP.
@@ -84,6 +107,18 @@ START-OF-SELECTION.
     WHERE ever~auszdat LE lv_current_date
       AND ever~auszdat GE lv_pastdate.
 
+* Collect for deduplication
+  SELECT DISTINCT ever~vkonto AS vkont APPENDING TABLE lt_all_ca
+    FROM ever
+    WHERE ever~auszdat LE lv_current_date
+      AND ever~auszdat GE lv_pastdate.
+
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
+    FROM ever
+    INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
+    WHERE ever~auszdat LE lv_current_date
+      AND ever~auszdat GE lv_pastdate.
+
   WRITE: / 'Rule 2: Inactive Accounts (Move-out within lookback)'.
   WRITE: / '  CA Count:', lv_r2_ca, '  BP Count:', lv_r2_bp.
   SKIP.
@@ -91,14 +126,26 @@ START-OF-SELECTION.
 * Rule 3: Write-off / Write-in
   SELECT COUNT( DISTINCT dfkkop~vkont ) INTO lv_r3_ca
     FROM dfkkop
-    WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
-      AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
+    WHERE dfkkop~hvorg IN ( '0630', 'ZWOF', 'ZWOS' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
 
   SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r3_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
-    WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
-      AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
+    WHERE dfkkop~hvorg IN ( '0630', 'ZWOF', 'ZWOS' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
+
+* Collect for deduplication
+  SELECT DISTINCT dfkkop~vkont AS vkont APPENDING TABLE lt_all_ca
+    FROM dfkkop
+    WHERE dfkkop~hvorg IN ( '0630', 'ZWOF', 'ZWOS' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
+
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
+    FROM dfkkop
+    INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
+    WHERE dfkkop~hvorg IN ( '0630', 'ZWOF', 'ZWOS' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
 
   WRITE: / 'Rule 3: Write-off / Write-in Transactions'.
   WRITE: / '  CA Count:', lv_r3_ca, '  BP Count:', lv_r3_bp.
@@ -114,6 +161,16 @@ START-OF-SELECTION.
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~augst = ' '.
 
+* Collect for deduplication
+  SELECT DISTINCT dfkkop~vkont AS vkont APPENDING TABLE lt_all_ca
+    FROM dfkkop
+    WHERE dfkkop~augst = ' '.
+
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
+    FROM dfkkop
+    INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
+    WHERE dfkkop~augst = ' '.
+
   WRITE: / 'Rule 4: Outstanding Balance (augst = space)'.
   WRITE: / '  CA Count:', lv_r4_ca, '  BP Count:', lv_r4_bp.
   SKIP.
@@ -121,21 +178,39 @@ START-OF-SELECTION.
 * Rule 9: Shutdown / Main Charge
   SELECT COUNT( DISTINCT dfkkop~vkont ) INTO lv_r9_ca
     FROM dfkkop
-    WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
-      AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
+    WHERE dfkkop~hvorg IN ( 'ZMNS', 'ZSHD' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
 
   SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r9_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
-    WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
-      AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
+    WHERE dfkkop~hvorg IN ( 'ZMNS', 'ZSHD' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
+
+* Collect for deduplication
+  SELECT DISTINCT dfkkop~vkont AS vkont APPENDING TABLE lt_all_ca
+    FROM dfkkop
+    WHERE dfkkop~hvorg IN ( 'ZMNS', 'ZSHD' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
+
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
+    FROM dfkkop
+    INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
+    WHERE dfkkop~hvorg IN ( 'ZMNS', 'ZSHD' )
+      AND ( dfkkop~augst = ' ' OR dfkkop~augst = '9' ).
 
   WRITE: / 'Rule 9: Shutdown Charge / Main Charge'.
   WRITE: / '  CA Count:', lv_r9_ca, '  BP Count:', lv_r9_bp.
   SKIP.
 
 * Rule 13: Account Manager
-  SELECT COUNT( DISTINCT fkkvkp~zzacctmngr) INTO lv_r13_bp
+  SELECT COUNT( DISTINCT fkkvkp~zzacctmngr ) INTO lv_r13_bp
+    FROM fkkvkp
+    WHERE fkkvkp~zzacctmngr IS NOT NULL
+      AND fkkvkp~zzacctmngr NE ''.
+
+* Collect for deduplication
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
     FROM fkkvkp
     WHERE fkkvkp~zzacctmngr IS NOT NULL
       AND fkkvkp~zzacctmngr NE ''.
@@ -145,7 +220,16 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 14: ZSTAFF BP
-  SELECT COUNT( DISTINCT but000~partner) INTO lv_r14_bp
+  SELECT COUNT( DISTINCT but000~partner ) INTO lv_r14_bp
+    FROM but000
+    INNER JOIN but0id ON but000~partner = but0id~partner
+    INNER JOIN ziscsallow ON but0id~idnumber = ziscsallow~emp_id
+    WHERE ziscsallow~inactive NE 'X'
+      AND ziscsallow~parent_id NE ' '
+      AND but0id~type = 'ZSTAFF'.
+
+* Collect for deduplication
+  SELECT DISTINCT but000~partner AS partner APPENDING TABLE lt_all_bp
     FROM but000
     INNER JOIN but0id ON but000~partner = but0id~partner
     INNER JOIN ziscsallow ON but0id~idnumber = ziscsallow~emp_id
@@ -158,11 +242,21 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 15: Group Bill
-  SELECT COUNT( DISTINCT fkkvk~vkont) INTO lv_r15_ca
+  SELECT COUNT( DISTINCT fkkvk~vkont ) INTO lv_r15_ca
     FROM fkkvk
     WHERE fkkvk~vktyp = '02'.
 
   SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r15_bp
+    FROM fkkvk
+    INNER JOIN fkkvkp ON fkkvk~vkont = fkkvkp~vkont
+    WHERE fkkvk~vktyp = '02'.
+
+* Collect for deduplication
+  SELECT DISTINCT fkkvk~vkont AS vkont APPENDING TABLE lt_all_ca
+    FROM fkkvk
+    WHERE fkkvk~vktyp = '02'.
+
+  SELECT DISTINCT fkkvkp~gpart AS partner APPENDING TABLE lt_all_bp
     FROM fkkvk
     INNER JOIN fkkvkp ON fkkvk~vkont = fkkvkp~vkont
     WHERE fkkvk~vktyp = '02'.
@@ -172,11 +266,20 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 16: ENLIGHT Flagged
-  SELECT COUNT( DISTINCT bp) INTO lv_r16_bp
+  SELECT COUNT( DISTINCT bp ) INTO lv_r16_bp
     FROM ziscsbpremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
-  SELECT COUNT( DISTINCT ca) INTO lv_r16_ca
+  SELECT COUNT( DISTINCT ca ) INTO lv_r16_ca
+    FROM ziscscaremark
+    WHERE short_text = 'ENLIGHTDATACONVERSION'.
+
+* Collect for deduplication
+  SELECT DISTINCT bp AS partner APPENDING TABLE lt_all_bp
+    FROM ziscsbpremark
+    WHERE short_text = 'ENLIGHTDATACONVERSION'.
+
+  SELECT DISTINCT ca AS vkont APPENDING TABLE lt_all_ca
     FROM ziscscaremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
@@ -185,7 +288,14 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 17: PER-PER Relationships
-  SELECT COUNT( DISTINCT partner2) INTO lv_r17_bp
+  SELECT COUNT( DISTINCT partner2 ) INTO lv_r17_bp
+    FROM but050
+    WHERE partner2 IS NOT NULL
+      AND partner2 NE ''
+      AND reltyp NE 'ZDUP'.
+
+* Collect for deduplication
+  SELECT DISTINCT partner2 AS partner APPENDING TABLE lt_all_bp
     FROM but050
     WHERE partner2 IS NOT NULL
       AND partner2 NE ''
@@ -195,6 +305,15 @@ START-OF-SELECTION.
   WRITE: / '  BP Count:', lv_r17_bp.
   SKIP.
 
+* Calculate distinct counts from collected data
+  SORT lt_all_ca BY vkont.
+  DELETE ADJACENT DUPLICATES FROM lt_all_ca COMPARING vkont.
+  lv_dist_ca = LINES( lt_all_ca ).
+
+  SORT lt_all_bp BY partner.
+  DELETE ADJACENT DUPLICATES FROM lt_all_bp COMPARING partner.
+  lv_dist_bp = LINES( lt_all_bp ).
+
 * Summary
   lv_total_ca = lv_r1_ca + lv_r2_ca + lv_r3_ca + lv_r4_ca + lv_r9_ca + lv_r15_ca + lv_r16_ca.
   lv_total_bp = lv_r1_bp + lv_r2_bp + lv_r3_bp + lv_r4_bp + lv_r9_bp + lv_r13_bp + lv_r14_bp + lv_r15_bp + lv_r16_bp + lv_r17_bp.
@@ -203,11 +322,14 @@ START-OF-SELECTION.
   WRITE: / '============================================================'.
   WRITE: / '                    SUMMARY'.
   WRITE: / '============================================================'.
-  WRITE: / 'Total CA (across rules):', lv_total_ca.
-  WRITE: / 'Total BP (across rules):', lv_total_bp.
+  WRITE: / 'Total CA (sum across rules):', lv_total_ca.
+  WRITE: / 'Total BP (sum across rules):', lv_total_bp.
+  WRITE: / '-----------------------------------------------------------'.
+  WRITE: / 'DISTINCT CA (deduplicated):  ', lv_dist_ca.
+  WRITE: / 'DISTINCT BP (deduplicated): ', lv_dist_bp.
   WRITE: / '============================================================'.
-  WRITE: / 'Note: BP count may exceed CA (1 BP = many CAs)'.
-  WRITE: / '      Cross-check with program output for validation.'.
+  WRITE: / 'Note: Same CA/BP may appear in multiple rules.'.
+  WRITE: / '      Use DISTINCT count for actual unique total.'.
   WRITE: / '============================================================'.
 
 END-OF-SELECTION.
