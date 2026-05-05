@@ -2,9 +2,10 @@
 *& Report  Z_ACCOUNT_VALIDATION
 *&---------------------------------------------------------------------*
 *& Quick validation report for ZISCS_MIGRATION_ACCOUNTS_MC4A
-*& Compares rule counts against source table data
+*& Compare rule counts against source table data
+*& ABAP 7.4 compatible version
 *&---------------------------------------------------------------------*
-REPORT z_account_validation NO STANDARD PAGE HEADING.
+REPORT z_account_validation NO STANDARD PAGE HEADING LINE-SIZE 120.
 
 * Parameters
 PARAMETERS: p_keydat TYPE datum DEFAULT '20251027',
@@ -13,11 +14,29 @@ PARAMETERS: p_keydat TYPE datum DEFAULT '20251027',
 * Variables
 DATA: lv_current_date TYPE sy-datum,
       lv_pastdate     TYPE sy-datum,
-      lv_text(50)     TYPE c.
+      lv_r1_ca TYPE p,
+      lv_r1_bp TYPE p,
+      lv_r2_ca TYPE p,
+      lv_r2_bp TYPE p,
+      lv_r3_ca TYPE p,
+      lv_r3_bp TYPE p,
+      lv_r4_ca TYPE p,
+      lv_r4_bp TYPE p,
+      lv_r9_ca TYPE p,
+      lv_r9_bp TYPE p,
+      lv_r13_bp TYPE p,
+      lv_r14_bp TYPE p,
+      lv_r15_ca TYPE p,
+      lv_r15_bp TYPE p,
+      lv_r16_ca TYPE p,
+      lv_r16_bp TYPE p,
+      lv_r17_bp TYPE p,
+      lv_total_ca TYPE p,
+      lv_total_bp TYPE p.
 
 START-OF-SELECTION.
 
-  MOVE p_keydat TO lv_current_date.
+  lv_current_date = p_keydat.
 
 * Calculate past date
   CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
@@ -31,51 +50,51 @@ START-OF-SELECTION.
       calc_date = lv_pastdate.
 
   WRITE: / '============================================================'.
-  WRITE: / '       ZISCS_MIGRATION_ACCOUNTS MC4A - VALIDATION REPORT'.
+  WRITE: / '   ZISCS_MIGRATION_ACCOUNTS - VALIDATION REPORT'.
   WRITE: / '============================================================'.
-  WRITE: / 'Key Date:    ', lv_current_date.
-  WRITE: / 'Past Date:   ', lv_pastdate.
-  WRITE: / 'Lookback:    ', p_month, 'months'.
+  WRITE: / 'Key Date:   ', lv_current_date.
+  WRITE: / 'Past Date:  ', lv_pastdate.
+  WRITE: / 'Lookback:   ', p_month, ' months'.
   WRITE: / '============================================================'.
   SKIP.
 
 * Rule 1: Active Accounts
-  SELECT COUNT(DISTINCT ever~vkonto) INTO @DATA(lv_r1_ca)
+  SELECT COUNT(DISTINCT ever~vkonto) INTO lv_r1_ca
     FROM ever
-    WHERE ever~auszdat >= @lv_current_date.
+    WHERE ever~auszdat GE lv_current_date.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r1_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r1_bp
     FROM ever
     INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
-    WHERE ever~auszdat >= @lv_current_date.
+    WHERE ever~auszdat GE lv_current_date.
 
   WRITE: / 'Rule 1: Active Accounts'.
   WRITE: / '  CA Count:', lv_r1_ca, '  BP Count:', lv_r1_bp.
   SKIP.
 
 * Rule 2: Inactive Accounts
-  SELECT COUNT(DISTINCT ever~vkonto) INTO @DATA(lv_r2_ca)
+  SELECT COUNT(DISTINCT ever~vkonto) INTO lv_r2_ca
     FROM ever
-    WHERE ever~auszdat <= @lv_current_date
-      AND ever~auszdat >= @lv_pastdate.
+    WHERE ever~auszdat LE lv_current_date
+      AND ever~auszdat GE lv_pastdate.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r2_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r2_bp
     FROM ever
     INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
-    WHERE ever~auszdat <= @lv_current_date
-      AND ever~auszdat >= @lv_pastdate.
+    WHERE ever~auszdat LE lv_current_date
+      AND ever~auszdat GE lv_pastdate.
 
   WRITE: / 'Rule 2: Inactive Accounts (Move-out within lookback)'.
   WRITE: / '  CA Count:', lv_r2_ca, '  BP Count:', lv_r2_bp.
   SKIP.
 
 * Rule 3: Write-off / Write-in
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO @DATA(lv_r3_ca)
+  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r3_ca
     FROM dfkkop
     WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
       AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r3_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r3_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
@@ -86,11 +105,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 4: Outstanding Balance
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO @DATA(lv_r4_ca)
+  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r4_ca
     FROM dfkkop
     WHERE dfkkop~augst = ' '.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r4_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r4_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~augst = ' '.
@@ -100,12 +119,12 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 9: Shutdown / Main Charge
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO @DATA(lv_r9_ca)
+  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r9_ca
     FROM dfkkop
     WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
       AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r9_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r9_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
@@ -116,22 +135,22 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 13: Account Manager
-  SELECT COUNT(DISTINCT fkkvkp~zzacctmngr) INTO @DATA(lv_r13_bp)
+  SELECT COUNT(DISTINCT fkkvkp~zzacctmngr) INTO lv_r13_bp
     FROM fkkvkp
     WHERE fkkvkp~zzacctmngr IS NOT NULL
-      AND fkkvkp~zzacctmngr <> ''.
+      AND fkkvkp~zzacctmngr NE ''.
 
   WRITE: / 'Rule 13: Account Manager BP'.
   WRITE: / '  BP Count:', lv_r13_bp.
   SKIP.
 
 * Rule 14: ZSTAFF BP
-  SELECT COUNT(DISTINCT but000~partner) INTO @DATA(lv_r14_bp)
+  SELECT COUNT(DISTINCT but000~partner) INTO lv_r14_bp
     FROM but000
     INNER JOIN but0id ON but000~partner = but0id~partner
     INNER JOIN ziscsallow ON but0id~idnumber = ziscsallow~emp_id
-    WHERE ziscsallow~inactive <> 'X'
-      AND ziscsallow~parent_id <> ' '
+    WHERE ziscsallow~inactive NE 'X'
+      AND ziscsallow~parent_id NE ' '
       AND but0id~type = 'ZSTAFF'.
 
   WRITE: / 'Rule 14: ZSTAFF BP (Dummy for strategic)'.
@@ -139,11 +158,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 15: Group Bill
-  SELECT COUNT(DISTINCT fkkvk~vkont) INTO @DATA(lv_r15_ca)
+  SELECT COUNT(DISTINCT fkkvk~vkont) INTO lv_r15_ca
     FROM fkkvk
     WHERE fkkvk~vktyp = '02'.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO @DATA(lv_r15_bp)
+  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r15_bp
     FROM fkkvk
     INNER JOIN fkkvkp ON fkkvk~vkont = fkkvkp~vkont
     WHERE fkkvk~vktyp = '02'.
@@ -153,11 +172,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 16: ENLIGHT Flagged
-  SELECT COUNT(DISTINCT bp) INTO @DATA(lv_r16_bp)
+  SELECT COUNT(DISTINCT bp) INTO lv_r16_bp
     FROM ziscsbpremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
-  SELECT COUNT(DISTINCT ca) INTO @DATA(lv_r16_ca)
+  SELECT COUNT(DISTINCT ca) INTO lv_r16_ca
     FROM ziscscaremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
@@ -166,30 +185,28 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 17: PER-PER Relationships
-  SELECT COUNT(DISTINCT partner2) INTO @DATA(lv_r17_bp)
+  SELECT COUNT(DISTINCT partner2) INTO lv_r17_bp
     FROM but050
     WHERE partner2 IS NOT NULL
-      AND partner2 <> ''
-      AND reltyp <> 'ZDUP'.
+      AND partner2 NE ''
+      AND reltyp NE 'ZDUP'.
 
   WRITE: / 'Rule 17: Person-Person Relationships'.
   WRITE: / '  BP Count:', lv_r17_bp.
   SKIP.
 
 * Summary
-  DATA: lv_total_ca TYPE i,
-        lv_total_bp TYPE i.
-
   lv_total_ca = lv_r1_ca + lv_r2_ca + lv_r3_ca + lv_r4_ca + lv_r9_ca + lv_r15_ca + lv_r16_ca.
   lv_total_bp = lv_r1_bp + lv_r2_bp + lv_r3_bp + lv_r4_bp + lv_r9_bp + lv_r13_bp + lv_r14_bp + lv_r15_bp + lv_r16_bp + lv_r17_bp.
 
+  SKIP.
   WRITE: / '============================================================'.
   WRITE: / '                    SUMMARY'.
   WRITE: / '============================================================'.
   WRITE: / 'Total CA (across rules):', lv_total_ca.
   WRITE: / 'Total BP (across rules):', lv_total_bp.
   WRITE: / '============================================================'.
-  WRITE: / 'Note: BP count may exceed CA count (1 BP = many CAs)'.
+  WRITE: / 'Note: BP count may exceed CA (1 BP = many CAs)'.
   WRITE: / '      Cross-check with program output for validation.'.
   WRITE: / '============================================================'.
 
