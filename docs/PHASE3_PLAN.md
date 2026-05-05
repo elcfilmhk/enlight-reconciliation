@@ -116,11 +116,11 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 | Item | Details |
 |------|---------|
 | Program | `ziscs_migration_contractoption` |
-| Latest UD | TBC |
+| Latest UD | None on file (initial v1, 12.09.2025) |
 | RTM Doc (Extract) | TD-Contract Option Type (SSR and C&I)-Extract & Cleanse (778043968) |
-| Validation Script | TBD |
+| Validation Script | `ziscs_migration_contractoption_validation_abap.txt` |
 | Assigned Agent | jbot3 |
-| Status | ⏳ Pending |
+| Status | ✅ Validation ABAP created (9 rules: C&I RTM 1-4, SSR RTM 1/2A/2B/3/4) |
 
 ### 3.5 Payment Plan (payplan)
 | Item | Details |
@@ -262,7 +262,7 @@ enlight-reconciliation/
 | sa | ✅ UD1K936697 | ✅ 945258700 / 707297676 | ✅ Created | Issues found (bugs) |
 | financial_tran | ✅ UD1K936735 | ✅ 906821764/908820484 | ✅ Created | ✅ Done |
 | adjustment | ✅ UD1K936545 | ✅ Created | ⏳ | Pending |
-| contractoption | ⏳ | ✅ 778043968 | ⏳ | Pending |
+| contractoption | ✅ initial v1 | ✅ 778043968 | ✅ Created | ⏳ RTM comparison pending |
 | payplan | ✅ | ✅ 943064714 | ⏳ | Pending |
 
 ---
