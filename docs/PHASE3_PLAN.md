@@ -39,12 +39,18 @@ All ZISCS_MIGRATION_* programs in `/home/vboxuser/CCMS/`
 ### 3.1 Service Agreement (sa)
 | Item | Details |
 |------|---------|
-| Program | `ziscs_migration_sa` / `ziscs_migration_sa_mock3` / `ziscs_migration_sa_mock4` |
-| Latest UD | UD1K936190 |
-| RTM Doc | TD-SA_Transform&Load-DM-CONV-03 (need to find) |
-| Validation Script | TBD |
+| Program | `ziscs_migration_sa_mock4` |
+| Latest UD | UD1K936697 (28-Apr-2026) |
+| RTM Doc | TD-SA Deposit-Transform&Load-CUSTOMER-CUST_IT4_CONV_04 (page 958595075) |
+| Validation Script | `scripts/ziscs_migration_sa_validation_abap.txt` ✅ |
 | Assigned Agent | main |
-| Status | 🔄 Reviewing program logic |
+| Status | ✅ Complete |
+
+**Key Findings:**
+- Rule 3 (write-off/write-in) REMOVED in UD1K936697
+- Lookback changed from fixed 24 months → configurable p_month (default 14)
+- Code quality issue: copy-paste bug in F_WRTIE_COUNT (uses lw_rule1-vkonto for rules 2 & 4)
+- RTM comparison: TD-SA Deposit doc found (different from expected TD-SA_Transform&Load-DM-CONV-03)
 
 ### 3.2 Financial Transaction (financial_tran)
 | Item | Details |
@@ -215,7 +221,7 @@ enlight-reconciliation/
 
 | Object | Program Found | RTM Doc Found | Validation | Status |
 |--------|--------------|--------------|------------|--------|
-| sa | ✅ | ⏳ | ⏳ | Reviewing |
+| sa | ✅ mock4 | ✅ CUST_IT4_CONV_04 | ✅ Done | ✅ Complete |
 | financial_tran | ✅ | ⏳ | ⏳ | Pending |
 | adjustment | ✅ | ⏳ | ⏳ | Pending |
 | contractoption | ⏳ | ⏳ | ⏳ | Pending |
@@ -228,9 +234,9 @@ enlight-reconciliation/
 ### For Phase 3 - Immediate Actions
 
 1. **SA (main)**
-   - [ ] Review `ziscs_migration_sa_mock4` (latest variant)
-   - [ ] Find RTM doc for SA
-   - [ ] Create validation script
+   - [x] Review `ziscs_migration_sa_mock4` (UD1K936697)
+   - [x] Find RTM doc: TD-SA Deposit-Transform&Load-CUSTOMER-CUST_IT4_CONV_04
+   - [x] Create validation script ✅
 
 2. **Financial Tran (main)**
    - [ ] Review `ziscs_migration_fin_tran_m4` (latest variant)
