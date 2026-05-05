@@ -167,6 +167,42 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 
 ---
 
+### 5.2 Read Object (Meter Reads)
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_read_object` |
+| Latest UD | UD1K936411 (12.12.2025) |
+| RTM Doc (Extract) | TD-Read Data-Extract & Cleanse (682263269) |
+| Validation Script | `ziscs_migration_read_object_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created, bugs found |
+
+**Program Rules:**
+- **MRO-1 (MRO Received)**: EABL where `ableser NE '000'`, `ablstat NE 0`, `adat` in range → distinct EQUNR
+- **MRO-2 (MRO Not Received)**: Input devices NOT in MRO-1 (input-dependent)
+- **MRO-3 (Estimate Read)**: EABL where `istablart = '03' OR 'AE'` with MRO-1 filters
+- **MRO-4 (MRO Document Count)**: COUNT of all EABL records (not distinct)
+- **DAYEND-1**: ETDZ+EPROFASS+EPROFVALMONTH, `bis='99991231'`, `valueday` in range, any val>=0
+- **INTERVAL-1**: ETDZ+EPROFASS+EPROFVAL30, `bis='99991231'`, `valueday` in range, any val>=0
+
+**Key Observations:**
+- Three radio-button modes: MRO (READ_MRO), Day End (READ_DAYEND), Interval (READ_INTERVAL)
+- UD1K936411 (Log#0005): Added `ableser NE '000'` check
+- UD1K936382 (Log#0004): Added `ablstat NE 0` check
+- All modes use `p_keydat` (low/high) date range parameter
+- Uses batch processing (500k records per batch)
+
+**BUGS FOUND:**
+1. **READ_INTERVAL**: `gs_file`/`gt_equi_*` inserts are INSIDE the `DO 48 TIMES` loop → duplicate inserts per device per non-zero interval. Since target is SORTED TABLE WITH UNIQUE KEY, duplicates silently ignored but causes performance degradation.
+2. **READ_DAYEND**: Same pattern — inserts inside `DO 31 TIMES` loop.
+3. **Fix needed**: Move all table inserts OUTSIDE the DO loops, guarded by the `lv_dayendprofile`/`lv_intervalprofile` flag.
+
+**RTM Alignment:**
+- TD-Read Data-Extract & Cleanse (682263269) — same TD as estimate_read
+- Program aligns with extraction rules for meter reading objects
+
+---
+
 ## Step-by-Step Process for Each Object
 
 ### Step 1: Find Latest Program Version
