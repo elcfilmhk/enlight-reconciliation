@@ -1,0 +1,62 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_SERVICEPOINT_VALIDATION
+*&---------------------------------------------------------------------*
+*& Validation report for ZISCS_MIGRATION_SERVICEPOINT_1 (UD1K936202)
+*& Compare rule counts against source tables
+*&---------------------------------------------------------------------*
+REPORT z_servicepoint_validation NO STANDARD PAGE HEADING.
+
+PARAMETERS: p_keydat TYPE datum DEFAULT sy-datum.
+
+START-OF-SELECTION.
+
+  WRITE: / '============================================================'.
+  WRITE: / ' ZISCS_MIGRATION_SERVICEPOINT_1 Validation (UD1K936202)'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Key Date: ', p_keydat.
+  WRITE: / '============================================================'.
+  SKIP.
+
+* Rule 1: Active Service Points (EANL)
+  SELECT COUNT(DISTINCT eanl~anlage) INTO @DATA(lv_sp_count)
+    FROM eanl
+    INNER JOIN iflot ON eanl~vstelle = iflot~vstelle
+    WHERE eanl~loevm = ' '
+      AND iflot~loevm = ' '
+      AND eanl~anlage IS NOT NULL.
+
+  WRITE: / 'Rule 1: Active Service Point'.
+  WRITE: / '  Count: ', lv_sp_count.
+  SKIP.
+
+* Service Point with Device
+  SELECT COUNT(DISTINCT eanl~anlage) INTO @DATA(lv_sp_device)
+    FROM eanl
+    INNER JOIN eastl ON eanl~anlage = eastl~anlage
+    INNER JOIN egerh ON eastl~logiknr = egerh~logiknr
+    WHERE eanl~loevm = ' '
+      AND eanl~anlage IS NOT NULL.
+
+  WRITE: / 'Service Point with Device Assigned'.
+  WRITE: / '  Count: ', lv_sp_device.
+  SKIP.
+
+* Total EANL records
+  SELECT COUNT(*) INTO @DATA(lv_total_eanl)
+    FROM eanl
+    WHERE loevm = ' '.
+
+  WRITE: / 'Total EANL (Active)'.
+  WRITE: / '  Count: ', lv_total_eanl.
+  SKIP.
+
+* Summary
+  WRITE: / '============================================================'.
+  WRITE: / '                    SUMMARY'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Service Point Count:      ', lv_sp_count.
+  WRITE: / 'SP with Device:           ', lv_sp_device.
+  WRITE: / 'Total EANL Active:         ', lv_total_eanl.
+  WRITE: / '============================================================'.
+
+END-OF-SELECTION.

@@ -1,0 +1,107 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_DEVICE_VALIDATION
+*&---------------------------------------------------------------------*
+*& Validation report for ZISCS_MIGRATION_DEVICE (UD1K936264)
+*& Compare rule counts against source tables
+*&---------------------------------------------------------------------*
+REPORT z_device_validation NO STANDARD PAGE HEADING.
+
+PARAMETERS: p_keydat TYPE datum DEFAULT '20251027',
+            p_month  TYPE numc2 DEFAULT 14.
+
+DATA: lv_pastdate TYPE sy-datum.
+
+START-OF-SELECTION.
+
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = p_keydat
+      days      = 0
+      months    = p_month
+      signum    = '-'
+      years     = 0
+    IMPORTING
+      calc_date = lv_pastdate.
+
+  WRITE: / '============================================================'.
+  WRITE: / '   ZISCS_MIGRATION_DEVICE Validation (UD1K936264)'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Key Date:  ', p_keydat, '  Past Date: ', lv_pastdate.
+  WRITE: / '============================================================'.
+  SKIP.
+
+* Rule 1: All meters in service (EGERH with no inactive status)
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_r1_count)
+    FROM egerh
+    INNER JOIN equi ON egerh~equnr = equi~equnr
+    WHERE egerh~bis = '00000000'
+      AND NOT EXISTS (
+        SELECT 1 FROM jest
+        INNER JOIN tj30t ON jest~stat = tj30t~estat
+        WHERE jest~objnr = equi~objnr
+          AND tj30t~stsma = 'ZCLPP'
+          AND tj30t~spras = 'E'
+          AND jest~inact <> 'X'
+          AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      ).
+
+  WRITE: / 'Rule 1: All Meters in Service'.
+  WRITE: / '  Count: ', lv_r1_count.
+  SKIP.
+
+* Rule 2: Inactive meters (status SCRA/LOST/LTDA within lookback period)
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_r2_count)
+    FROM egerh
+    INNER JOIN equi ON egerh~equnr = equi~equnr
+    INNER JOIN jest ON equi~objnr = jest~objnr
+    INNER JOIN tj30t ON jest~stat = tj30t~estat
+    WHERE egerh~bis = '00000000'
+      AND jest~inact <> 'X'
+      AND tj30t~stsma = 'ZCLPP'
+      AND tj30t~spras = 'E'
+      AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      AND jest~erdat >= @lv_pastdate
+      AND jest~erdat <= @p_keydat.
+
+  WRITE: / 'Rule 2: Inactive Meters (within lookback)'.
+  WRITE: / '  Count: ', lv_r2_count.
+  SKIP.
+
+* Device Config ID count (Rule 1 + Rule 2 config)
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_config_count)
+    FROM egerh
+    INNER JOIN equi ON egerh~equnr = equi~equnr
+    WHERE NOT EXISTS (
+        SELECT 1 FROM jest
+        INNER JOIN tj30t ON jest~stat = tj30t~estat
+        WHERE jest~objnr = equi~objnr
+          AND tj30t~stsma = 'ZCLPP'
+          AND tj30t~spras = 'E'
+          AND jest~inact <> 'X'
+          AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      ).
+
+  WRITE: / 'Device Config ID Count (Total)'.
+  WRITE: / '  Count: ', lv_config_count.
+  SKIP.
+
+* Total Device Count
+  SELECT COUNT(DISTINCT equnr) INTO @DATA(lv_total_device)
+    FROM equi
+    WHERE equnr IS NOT NULL.
+
+  WRITE: / 'Total Device Count (EQUI)'.
+  WRITE: / '  Count: ', lv_total_device.
+  SKIP.
+
+* Summary
+  WRITE: / '============================================================'.
+  WRITE: / '                    SUMMARY'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Rule 1 (Meters in Service): ', lv_r1_count.
+  WRITE: / 'Rule 2 (Inactive Meters):   ', lv_r2_count.
+  WRITE: / 'Device Config ID:            ', lv_config_count.
+  WRITE: / 'Total Devices:               ', lv_total_device.
+  WRITE: / '============================================================'.
+
+END-OF-SELECTION.

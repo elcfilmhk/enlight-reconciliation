@@ -1,0 +1,87 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_PREMISE_VALIDATION
+*&---------------------------------------------------------------------*
+*& Validation report for ZISCS_MIGRATION_PREMISE (UD1K936264)
+*& Compare rule counts against source tables
+*&---------------------------------------------------------------------*
+REPORT z_premise_validation NO STANDARD PAGE HEADING.
+
+PARAMETERS: p_keydat TYPE datum DEFAULT '20251027',
+            p_month  TYPE numc2 DEFAULT 14.
+
+DATA: lv_pastdate TYPE sy-datum.
+
+START-OF-SELECTION.
+
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = p_keydat
+      days      = 0
+      months    = p_month
+      signum    = '-'
+      years     = 0
+    IMPORTING
+      calc_date = lv_pastdate.
+
+  WRITE: / '============================================================'.
+  WRITE: / '  ZISCS_MIGRATION_PREMISE Validation (UD1K936264)'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Key Date:  ', p_keydat, '  Past Date: ', lv_pastdate.
+  WRITE: / '============================================================'.
+  SKIP.
+
+* Rule 1: Active Premise (EVBS with valid status)
+  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r1_count)
+    FROM evbs
+    INNER JOIN iloa ON evbs~vstelle = iloa~vstelle
+    WHERE evbs~loevm = ' '
+      AND evbs~vstelle IS NOT NULL.
+
+  WRITE: / 'Rule 1: Active Premise'.
+  WRITE: / '  Count: ', lv_r1_count.
+  SKIP.
+
+* Rule 2: Premise with status changes (EVBS + IFLOT)
+  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_count)
+    FROM evbs
+    INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
+    WHERE evbs~loevm <> 'X'
+      AND iflot~fltyp = 'PRE'
+      AND iflot~aedat >= @lv_pastdate
+      AND iflot~aedat <= @p_keydat.
+
+  WRITE: / 'Rule 2: Premise with Recent Changes'.
+  WRITE: / '  Count: ', lv_r2_count.
+  SKIP.
+
+* Parent Premise Count
+  SELECT COUNT(DISTINCT vstelle) INTO @DATA(lv_parent_count)
+    FROM evbs
+    WHERE haus IS NOT NULL
+      AND haus <> ''
+      AND loevm = ' '.
+
+  WRITE: / 'Parent Premise Count'.
+  WRITE: / '  Count: ', lv_parent_count.
+  SKIP.
+
+* Total Premise
+  SELECT COUNT(*) INTO @DATA(lv_total_premise)
+    FROM evbs
+    WHERE loevm = ' '.
+
+  WRITE: / 'Total Premise (Active)'.
+  WRITE: / '  Count: ', lv_total_premise.
+  SKIP.
+
+* Summary
+  WRITE: / '============================================================'.
+  WRITE: / '                    SUMMARY'.
+  WRITE: / '============================================================'.
+  WRITE: / 'Rule 1 (Active Premise):      ', lv_r1_count.
+  WRITE: / 'Rule 2 (Recent Changes):      ', lv_r2_count.
+  WRITE: / 'Parent Premise:               ', lv_parent_count.
+  WRITE: / 'Total Active Premise:         ', lv_total_premise.
+  WRITE: / '============================================================'.
+
+END-OF-SELECTION.
