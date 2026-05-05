@@ -85,21 +85,32 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 | Item | Details |
 |------|---------|
 | Program | `ziscs_migration_financial_tran` / `ziscs_migration_fin_tran_m3_5` / `ziscs_migration_fin_tran_m4` |
-| Latest UD | TBC |
-| RTM Doc (Extract) | TD-Financial Transaction (FT)-Extract & Cleanse (906821764) |
-| Validation Script | TBD |
+| Latest UD | UD1K936735 (27-Apr-2026) |
+| RTM Doc (Extract) | TD-Financial Transaction (FT)-Extract & Cleanse (906821764 / 908820484) |
+| Validation Script | `ziscs_migration_fin_tran_validation_abap.txt` |
 | Assigned Agent | main |
-| Status | ⏳ Pending |
+| Status | ✅ Validation ABAP Created |
+
+**Program Rules (RTM1 + RTM2):**
+- **RTM1** (Log#0003 UD1K936735): Non-statistical open items (bltyp<>'2', augst='', xanza<>'X' OR augrs<>'2') PLUS statistical TP items (bltyp='2', blart='TP', hvorg IN ZWOS/ZWOF, tvorg IN 0010/0020). Dedup: opbel+vkont+vtref+opupw+opupk+opupz
+- **RTM2** (Log#0001 UD1K936549): Incomplete billing plans (blart='IP', augst='', deadt='00000000'). Same dedup key.
+
+**Key Observations:**
+- UD1K936735 adds "Non-Statistical and open items without Deposit/Statistical open TP with write in/off amount"
+- UD1K936703 added item fields (opupw/opupk/opupz) to dedup key
+- RTM "Exclude statistical FICA" partially implemented (TP statistical items included)
+- No 14-month history restriction (matches RTM scope)
+- Selection on `augbd` (clearing date), not `budat` (posting date)
 
 ### 3.3 Adjustment
 | Item | Details |
 |------|---------|
 | Program | `ziscs_migration_adjustment` / `ziscs_migration_adjustment_m3` / `ziscs_migration_adjustment_m4` |
-| Latest UD | UD1K936178 |
+| Latest UD | **UD1K936545** (09.03.2026) - M3.5 logic update |
 | RTM Doc (Extract) | TD-ADJUSTMENT Primary-Extract & Cleanse (835846145) |
-| Validation Script | TBD |
+| Validation Script | `ziscs_migration_adjustment_validation_abap.txt` |
 | Assigned Agent | work |
-| Status | ⏳ Pending |
+| Status | ✅ Validation ABAP created |
 
 ### 3.4 Contract Option
 | Item | Details |
@@ -249,8 +260,8 @@ enlight-reconciliation/
 | Object | Program Found | RTM Extract Doc | Validation | Status |
 |--------|--------------|-----------------|------------|--------|
 | sa | ✅ UD1K936697 | ✅ 945258700 / 707297676 | ✅ Created | Issues found (bugs) |
-| financial_tran | ✅ | ✅ 906821764 | ⏳ | Pending |
-| adjustment | ✅ UD1K936178 | ✅ 835846145 | ⏳ | Pending |
+| financial_tran | ✅ UD1K936735 | ✅ 906821764/908820484 | ✅ Created | ✅ Done |
+| adjustment | ✅ UD1K936545 | ✅ Created | ⏳ | Pending |
 | contractoption | ⏳ | ✅ 778043968 | ⏳ | Pending |
 | payplan | ✅ | ✅ 943064714 | ⏳ | Pending |
 
