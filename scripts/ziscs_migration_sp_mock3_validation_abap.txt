@@ -39,7 +39,7 @@ START-OF-SELECTION.
   WRITE: / '--- RULE 1: ACTIVE SERVICE POINT ---'.
 
 * Active SP via Logical Device (EANL+EASTL+EGERH)
-  SELECT COUNT(DISTINCT eanl~vstelle) INTO @DATA(lv_sp_active1)
+  SELECT COUNT( DISTINCT eanl~vstelle) INTO @DATA(lv_sp_active1)
     FROM eanl
     INNER JOIN eastl ON eanl~anlage = eastl~anlage
     INNER JOIN egerh ON eastl~logiknr = egerh~logiknr
@@ -55,7 +55,7 @@ START-OF-SELECTION.
   WRITE: / 'Active SP (Logical Device): ', lv_sp_active1.
 
 * Active SP via Device Collector (IFLOT+EGERH, kombinat='G')
-  SELECT COUNT(DISTINCT iflot~prems) INTO @DATA(lv_sp_active_mock)
+  SELECT COUNT( DISTINCT iflot~prems) INTO @DATA(lv_sp_active_mock)
     FROM iflot
     INNER JOIN egerh ON iflot~tplnr = egerh~devloc
     INNER JOIN equi  ON egerh~equnr = equi~equnr
@@ -80,7 +80,7 @@ START-OF-SELECTION.
   WRITE: / '--- RULE 2: INACTIVE SERVICE POINT ---'.
 
 * Inactive SP via Logical Device
-  SELECT COUNT(DISTINCT eanl~vstelle) INTO @DATA(lv_sp_inact1)
+  SELECT COUNT( DISTINCT eanl~vstelle) INTO @DATA(lv_sp_inact1)
     FROM eanl
     INNER JOIN eastl ON eanl~anlage = eastl~anlage
     INNER JOIN egerh ON eastl~logiknr = egerh~logiknr
@@ -97,7 +97,7 @@ START-OF-SELECTION.
   WRITE: / 'Inactive SP (Logical Device): ', lv_sp_inact1.
 
 * Inactive SP via Device Collector
-  SELECT COUNT(DISTINCT iflot~prems) INTO @DATA(lv_sp_inact_mock)
+  SELECT COUNT( DISTINCT iflot~prems) INTO @DATA(lv_sp_inact_mock)
     FROM iflot
     INNER JOIN egerh ON iflot~tplnr = egerh~devloc
     INNER JOIN equi  ON egerh~equnr = equi~equnr
@@ -122,7 +122,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- SP_COLLECTOR_DEVICE ---'.
 
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_sp_collector)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_sp_collector)
     FROM egerh
     INNER JOIN iflot ON iflot~tplnr = egerh~devloc
     INNER JOIN equi  ON egerh~equnr = equi~equnr

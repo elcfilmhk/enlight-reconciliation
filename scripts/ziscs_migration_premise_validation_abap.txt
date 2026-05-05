@@ -53,7 +53,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- RULE 1: Active Premise ---'.
 
-  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r1_count)
+  SELECT COUNT( DISTINCT evbs~vstelle) INTO @DATA(lv_r1_count)
     FROM evbs
     INNER JOIN iloa ON evbs~vstelle = iloa~vstelle
     WHERE evbs~loevm = ' '
@@ -70,7 +70,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- RULE 2: Demolished Premise (7-Year Lookback) ---'.
 
-  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_7yr_count)
+  SELECT COUNT( DISTINCT evbs~vstelle) INTO @DATA(lv_r2_7yr_count)
     FROM evbs
     INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
     INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
@@ -91,7 +91,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- RULE 2: Demolished Premise (2-Year Lookback) ---'.
 
-  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_2yr_count)
+  SELECT COUNT( DISTINCT evbs~vstelle) INTO @DATA(lv_r2_2yr_count)
     FROM evbs
     INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
     INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
@@ -111,7 +111,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- RULE 3: Demolished >7 years with Meter ---'.
 
-  SELECT COUNT(DISTINCT evbs~vsteller) INTO @DATA(lv_r3_7yr_count)
+  SELECT COUNT( DISTINCT evbs~vsteller) INTO @DATA(lv_r3_7yr_count)
     FROM evbs
     INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
     INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
@@ -131,7 +131,7 @@ START-OF-SELECTION.
 
   WRITE: / '--- RULE 3: Demolished >2 years with Meter (RTM) ---'.
 
-  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r3_2yr_count)
+  SELECT COUNT( DISTINCT evbs~vstelle) INTO @DATA(lv_r3_2yr_count)
     FROM evbs
     INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
     INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr

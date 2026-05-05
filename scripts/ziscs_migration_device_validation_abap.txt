@@ -40,7 +40,7 @@ START-OF-SELECTION.
 
 * Rule 1: All meters in service (including AMI collectors)
 * Device in store = EGERH.BIS='00000000' with no inactive status
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_dev_r1_count)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_dev_r1_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     WHERE egerh~bis = '00000000'
@@ -60,7 +60,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 2: Inactive meters (SCRA/LOST/LTDA within lookback)
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_dev_r2_count)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_dev_r2_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     INNER JOIN jest ON equi~objnr = jest~objnr
@@ -92,7 +92,7 @@ START-OF-SELECTION.
   WRITE: / '--- DEVICE CONFIGURATION COUNT ---'.
 
 * Device Config Rule 1: Config for meters in service
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r1_count)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r1_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     WHERE egerh~bis = '00000000'
@@ -112,7 +112,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Device Config Rule 2: Config for inactive meters
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r2_count)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r2_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     INNER JOIN jest ON equi~objnr = jest~objnr
@@ -131,7 +131,7 @@ START-OF-SELECTION.
   SKIP.
 
 * MC_SYNC_01: Measuring Component, Reg ID, Interval Profile, Reg Factor
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_mc_sync1_count)
+  SELECT COUNT( DISTINCT egerh~equnr) INTO @DATA(lv_mc_sync1_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     WHERE egerh~bis = '00000000'
@@ -152,7 +152,7 @@ START-OF-SELECTION.
   SKIP.
 
 * MC_SYNC_02: MC, Reg Group, Interval Profile
-  SELECT COUNT(DISTINCT egerh~logiknr) INTO @DATA(lv_mc_sync2_count)
+  SELECT COUNT( DISTINCT egerh~logiknr) INTO @DATA(lv_mc_sync2_count)
     FROM egerh
     WHERE egerh~bis = '00000000'
       AND egerh~equnr IN @s_equ

@@ -59,11 +59,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 1: Active Accounts
-  SELECT COUNT(DISTINCT ever~vkonto) INTO lv_r1_ca
+  SELECT COUNT( DISTINCT ever~vkonto ) INTO lv_r1_ca
     FROM ever
     WHERE ever~auszdat GE lv_current_date.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r1_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r1_bp
     FROM ever
     INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
     WHERE ever~auszdat GE lv_current_date.
@@ -73,12 +73,12 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 2: Inactive Accounts
-  SELECT COUNT(DISTINCT ever~vkonto) INTO lv_r2_ca
+  SELECT COUNT( DISTINCT ever~vkonto ) INTO lv_r2_ca
     FROM ever
     WHERE ever~auszdat LE lv_current_date
       AND ever~auszdat GE lv_pastdate.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r2_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r2_bp
     FROM ever
     INNER JOIN fkkvkp ON ever~vkonto = fkkvkp~vkont
     WHERE ever~auszdat LE lv_current_date
@@ -89,12 +89,12 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 3: Write-off / Write-in
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r3_ca
+  SELECT COUNT( DISTINCT dfkkop~vkont ) INTO lv_r3_ca
     FROM dfkkop
     WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
       AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r3_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r3_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~hvorg IN ('0630', 'ZWOF', 'ZWOS')
@@ -105,11 +105,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 4: Outstanding Balance
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r4_ca
+  SELECT COUNT( DISTINCT dfkkop~vkont ) INTO lv_r4_ca
     FROM dfkkop
     WHERE dfkkop~augst = ' '.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r4_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r4_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~augst = ' '.
@@ -119,12 +119,12 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 9: Shutdown / Main Charge
-  SELECT COUNT(DISTINCT dfkkop~vkont) INTO lv_r9_ca
+  SELECT COUNT( DISTINCT dfkkop~vkont ) INTO lv_r9_ca
     FROM dfkkop
     WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
       AND (dfkkop~augst = ' ' OR dfkkop~augst = '9').
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r9_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r9_bp
     FROM dfkkop
     INNER JOIN fkkvkp ON dfkkop~vkont = fkkvkp~vkont
     WHERE dfkkop~hvorg IN ('ZMNS', 'ZSHD')
@@ -135,7 +135,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 13: Account Manager
-  SELECT COUNT(DISTINCT fkkvkp~zzacctmngr) INTO lv_r13_bp
+  SELECT COUNT( DISTINCT fkkvkp~zzacctmngr) INTO lv_r13_bp
     FROM fkkvkp
     WHERE fkkvkp~zzacctmngr IS NOT NULL
       AND fkkvkp~zzacctmngr NE ''.
@@ -145,7 +145,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 14: ZSTAFF BP
-  SELECT COUNT(DISTINCT but000~partner) INTO lv_r14_bp
+  SELECT COUNT( DISTINCT but000~partner) INTO lv_r14_bp
     FROM but000
     INNER JOIN but0id ON but000~partner = but0id~partner
     INNER JOIN ziscsallow ON but0id~idnumber = ziscsallow~emp_id
@@ -158,11 +158,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 15: Group Bill
-  SELECT COUNT(DISTINCT fkkvk~vkont) INTO lv_r15_ca
+  SELECT COUNT( DISTINCT fkkvk~vkont) INTO lv_r15_ca
     FROM fkkvk
     WHERE fkkvk~vktyp = '02'.
 
-  SELECT COUNT(DISTINCT fkkvkp~gpart) INTO lv_r15_bp
+  SELECT COUNT( DISTINCT fkkvkp~gpart ) INTO lv_r15_bp
     FROM fkkvk
     INNER JOIN fkkvkp ON fkkvk~vkont = fkkvkp~vkont
     WHERE fkkvk~vktyp = '02'.
@@ -172,11 +172,11 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 16: ENLIGHT Flagged
-  SELECT COUNT(DISTINCT bp) INTO lv_r16_bp
+  SELECT COUNT( DISTINCT bp) INTO lv_r16_bp
     FROM ziscsbpremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
-  SELECT COUNT(DISTINCT ca) INTO lv_r16_ca
+  SELECT COUNT( DISTINCT ca) INTO lv_r16_ca
     FROM ziscscaremark
     WHERE short_text = 'ENLIGHTDATACONVERSION'.
 
@@ -185,7 +185,7 @@ START-OF-SELECTION.
   SKIP.
 
 * Rule 17: PER-PER Relationships
-  SELECT COUNT(DISTINCT partner2) INTO lv_r17_bp
+  SELECT COUNT( DISTINCT partner2) INTO lv_r17_bp
     FROM but050
     WHERE partner2 IS NOT NULL
       AND partner2 NE ''
