@@ -126,11 +126,11 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 | Item | Details |
 |------|---------|
 | Program | `ziscs_migration_payplan` / `ziscs_migration_payplan_mock3` / `ziscs_migration_payplan_mock4` |
-| Latest UD | TBC |
+| Latest UD | UD1K936403 (Mock4, 13.11.2025) |
 | RTM Doc (Extract) | TD-PayPlan-Extract & Cleanse (943064714) |
-| Validation Script | TBD |
+| Validation Script | `ziscs_migration_payplan_validation_abap.txt` |
 | Assigned Agent | jbot4 |
-| Status | ⏳ Pending |
+| Status | ✅ Validation ABAP created |
 
 ---
 
@@ -263,7 +263,7 @@ enlight-reconciliation/
 | financial_tran | ✅ UD1K936735 | ✅ 906821764/908820484 | ✅ Created | ✅ Done |
 | adjustment | ✅ UD1K936545 | ✅ Created | ⏳ | Pending |
 | contractoption | ✅ initial v1 | ✅ 778043968 | ✅ Created | ⏳ RTM comparison pending |
-| payplan | ✅ | ✅ 943064714 | ⏳ | Pending |
+| payplan | ✅ UD1K936403 | ✅ Created | ✅ RTM 943064714 | Mock4, Log#0001 adds RTM3/RTM5, blart<>IP filter |
 
 ---
 
