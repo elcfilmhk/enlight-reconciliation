@@ -11,7 +11,7 @@ Validate all ENLIGHT migration programs (ZISCS_MIGRATION_*) against **RTM Data E
 | Phase 1 | accounts | ✅ Done |
 | Phase 2 | device, premise, servicepoint | ✅ Done |
 | **Phase 3** | **sa, financial_tran, adjustment, contractoption, payplan** | 📋 **In Progress** |
-| Phase 4 | eeus, fuel_switching, fit_rate | 📋 **In Progress** |
+| **Phase 4** | **fuel_switching**, eeus, fit_rate | 📋 **In Progress** |
 | Phase 5 | alipay_wechat, read_object, estimate_read, unmetered_sp |
 
 ---
@@ -131,6 +131,44 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 | Validation Script | `ziscs_migration_payplan_validation_abap.txt` |
 | Assigned Agent | jbot4 |
 | Status | ✅ Validation ABAP created |
+
+---
+
+## Phase 5: Alipay/WeChat Payment
+
+### 5.3 Alipay/WeChat Payment
+| Item | Details |
+------|---------|
+| Program | `ziscs_migration_alipay_wechat` |
+| Latest UD | **UD1K936507** (18-Feb-2026) |
+| Transport | UD1K936507 |
+| Author | Tanya Bisht |
+| RTM Doc (Extract) | TD-OIC-RealTime Payment Integration Alipay (741507092) / TD-OIC-RealTime Payment Integration WeChat (741572610) |
+| RTM Doc (Ref) | TD CCS Payment Reconciliation Alipay INT368.3 (630292568), TD CCS Payment Reconciliation WeChat INT105.13.2 (631603202) |
+| Validation Script | `ziscs_migration_alipay_wechat_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created, bugs found |
+
+**Program Rules:**
+- **RTM 1 (Active Subscription)**: `zzstatus_sid = 'A'` AND `ever~auszdat >= fromdate` (contract end within lookback). Dedup: distinct zzsubid + vkont.
+- **RTM 2 (Inactive Subscription)**: `zzstatus_sid = 'I'` AND `zzchange_date >= fromdate` AND `ever~auszdat >= fromdate`. Dedup: distinct zzsubid + vkont.
+
+**Key Observations:**
+- Source table: `ZISCS_PAYCHANSID` (zisfipaychansid) — subscription/channel mapping for Alipay and WeChat
+- Uses LEFT JOIN to `ever` for contract end date (`auszdat`) filtering
+- Selection screen: offic_ex, vkont, zzsubid, zzopenid, zzstatus_sid
+- Program logic simple — only RTM 1 and RTM 2, no additional rules
+
+**BUGS FOUND:**
+1. **LEFT JOIN converted to INNER JOIN**: Both RTM queries use `LEFT JOIN ever ... WHERE b~auszdat >= @gv_fromdate`. In LEFT JOIN, WHERE conditions on the right table convert it to INNER JOIN semantics. Records in zisfipaychansid with no matching ever record will be excluded from counts. **FIX**: Add `AND b~vkonto IS NOT NULL` before the date filter, or change to `INNER JOIN`.
+2. **s_status selection redundant in RTM1**: RTM1 hardcodes `zzstatus_sid = 'A'` but still applies `s_status` selection. This has no effect since hardcoded condition overrides selection, but it's confusing and should be cleaned up.
+3. **Path separator inconsistency in export_csv**: Line 103 uses forward slash `/` but line 110 uses escaped backslash `\`. On Unix/Linux this causes path failures. **FIX**: Always use `/` or detect OS with `cl_gui_frontend_services=>get_os_version`.
+
+**RTM Alignment:**
+- TD-OIC-RealTime Payment Integration Alipay (741507092) defines account subscription flow
+- TD-OIC-RealTime Payment Integration WeChat (741572610) defines WeChat equivalent
+- TD CCS Payment Reconciliation docs (630292568, 631603202) cover batch posting and reconciliation
+- Program covers RTM 1 (active) and RTM 2 (inactive) subscriptions correctly, but LEFT JOIN bug may cause undercount
 
 ---
 
@@ -403,6 +441,27 @@ When any migration program logic changes:
 - Single rule only (RTM1 status counts)
 - No additional RTM rules implemented
 - Program has not been updated since initial release
+
+---
+
+### Phase 5b: Unmetered Service Point
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_unmetered_sp` |
+| Latest UD | UD1K936493 |
+| RTM Doc (Extract) | TD-Unmetered & Public Lighting-Extract & Cleanse (1253769226) |
+| Validation Script | `ziscs_migration_unmetered_sp_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created |
+
+**Program Rules:**
+- **Rule 1**: Unmetered SP selection (ever + eanlh inner join, ableinh='UNMETER', ettifb EXISTS with operand<>space)
+
+**Key Observations:**
+- p_month parameter is defined but NEVER USED - program hard-codes p_month = 24
+- gv_key_date = keydt - 24 months, gv_moveout = auszdt - 24 months
+- Dedup: vkonto + anlage (adjacent duplicates)
+- ettifb check: bis >= gv_key_date AND operand <> space
 
 ---
 
