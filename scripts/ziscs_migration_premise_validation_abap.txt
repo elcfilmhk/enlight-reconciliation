@@ -6,82 +6,165 @@
 *&---------------------------------------------------------------------*
 REPORT z_premise_validation NO STANDARD PAGE HEADING.
 
-PARAMETERS: p_keydat TYPE datum DEFAULT '20251027',
-            p_month  TYPE numc2 DEFAULT 14.
+PARAMETERS: p_keydat  TYPE datum DEFAULT '20251027',
+            p_month_7 TYPE numc2 DEFAULT 84,  " 7 years = 84 months
+            p_month_2 TYPE numc2 DEFAULT 24. " 2 years = 24 months
 
-DATA: lv_pastdate TYPE sy-datum.
+DATA: lv_past7yr TYPE sy-datum,
+      lv_past2yr TYPE sy-datum.
 
 START-OF-SELECTION.
+
+* Calculate past dates for both lookback periods
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = p_keydat
+      days      = 0
+      months    = p_month_7
+      signum    = '-'
+      years     = 0
+    IMPORTING
+      calc_date = lv_past7yr.
 
   CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
     EXPORTING
       date      = p_keydat
       days      = 0
-      months    = p_month
+      months    = p_month_2
       signum    = '-'
       years     = 0
     IMPORTING
-      calc_date = lv_pastdate.
+      calc_date = lv_past2yr.
 
   WRITE: / '============================================================'.
   WRITE: / '  ZISCS_MIGRATION_PREMISE Validation (UD1K936264)'.
   WRITE: / '============================================================'.
-  WRITE: / 'Key Date:  ', p_keydat, '  Past Date: ', lv_pastdate.
+  WRITE: / 'Key Date:   ', p_keydat.
+  WRITE: / '7-Year Past:', lv_past7yr, ' (Program currently uses this)'.
+  WRITE: / '2-Year Past:', lv_past2yr, ' (RTM specifies this)'.
   WRITE: / '============================================================'.
   SKIP.
 
-* Rule 1: Active Premise (EVBS with valid status)
+*============================================================
+*  RULE 1: All Active Premise
+*  - Not marked deleted (EVBS.LOEVM = ' ')
+*  - Valid connection object
+*============================================================
+
+  WRITE: / '--- RULE 1: Active Premise ---'.
+
   SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r1_count)
     FROM evbs
     INNER JOIN iloa ON evbs~vstelle = iloa~vstelle
     WHERE evbs~loevm = ' '
       AND evbs~vstelle IS NOT NULL.
 
-  WRITE: / 'Rule 1: Active Premise'.
+  WRITE: / 'Rule 1: Active Premise (not deleted)'.
   WRITE: / '  Count: ', lv_r1_count.
   SKIP.
 
-* Rule 2: Premise with status changes (EVBS + IFLOT)
-  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_count)
+*============================================================
+*  RULE 2: Premise under Demolished Connection (7 years)
+*  - Program currently uses 7-year lookback
+*============================================================
+
+  WRITE: / '--- RULE 2: Demolished Premise (7-Year Lookback) ---'.
+
+  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_7yr_count)
     FROM evbs
     INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
-    WHERE evbs~loevm <> 'X'
-      AND iflot~fltyp = 'PRE'
-      AND iflot~aedat >= @lv_pastdate
-      AND iflot~aedat <= @p_keydat.
+    INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
+    WHERE evbs~loevm = ' '
+      AND iflot~loevm <> 'X'
+      AND iflotv~loevm = 'X'
+      AND iflotv~aedat >= @lv_past7yr
+      AND iflotv~aedat <= @p_keydat.
 
-  WRITE: / 'Rule 2: Premise with Recent Changes'.
-  WRITE: / '  Count: ', lv_r2_count.
+  WRITE: / 'Rule 2 (7yr): Demolished Premise (Program uses 7 years)'.
+  WRITE: / '  Count: ', lv_r2_7yr_count.
   SKIP.
 
-* Parent Premise Count
-  SELECT COUNT(DISTINCT vstelle) INTO @DATA(lv_parent_count)
+*============================================================
+*  RULE 2: Premise under Demolished Connection (2 years - RTM)
+*  - RTM specifies 2-year lookback
+*============================================================
+
+  WRITE: / '--- RULE 2: Demolished Premise (2-Year Lookback) ---'.
+
+  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r2_2yr_count)
     FROM evbs
-    WHERE haus IS NOT NULL
-      AND haus <> ''
-      AND loevm = ' '.
+    INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
+    INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
+    WHERE evbs~loevm = ' '
+      AND iflot~loevm <> 'X'
+      AND iflotv~loevm = 'X'
+      AND iflotv~aedat >= @lv_past2yr
+      AND iflotv~aedat <= @p_keydat.
 
-  WRITE: / 'Parent Premise Count'.
-  WRITE: / '  Count: ', lv_parent_count.
+  WRITE: / 'Rule 2 (2yr): Demolished Premise (RTM specifies 2 years)'.
+  WRITE: / '  Count: ', lv_r2_2yr_count.
   SKIP.
 
-* Total Premise
-  SELECT COUNT(*) INTO @DATA(lv_total_premise)
+*============================================================
+*  RULE 3: Demolished > 7 years with Meter (Program)
+*============================================================
+
+  WRITE: / '--- RULE 3: Demolished >7 years with Meter ---'.
+
+  SELECT COUNT(DISTINCT evbs~vsteller) INTO @DATA(lv_r3_7yr_count)
     FROM evbs
-    WHERE loevm = ' '.
+    INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
+    INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
+    INNER JOIN eanl ON evbs~vstelle = eanl~vstelle
+    WHERE evbs~loevm = ' '
+      AND iflot~loevm <> 'X'
+      AND iflotv~loevm = 'X'
+      AND iflotv~aedat < @lv_past7yr.
 
-  WRITE: / 'Total Premise (Active)'.
-  WRITE: / '  Count: ', lv_total_premise.
+  WRITE: / 'Rule 3 (7yr): Demolished >7yr with Meter (Program)'.
+  WRITE: / '  Count: ', lv_r3_7yr_count.
   SKIP.
 
-* Summary
+*============================================================
+*  RULE 3: Demolished > 2 years with Meter (RTM)
+*============================================================
+
+  WRITE: / '--- RULE 3: Demolished >2 years with Meter (RTM) ---'.
+
+  SELECT COUNT(DISTINCT evbs~vstelle) INTO @DATA(lv_r3_2yr_count)
+    FROM evbs
+    INNER JOIN iflot ON evbs~vstelle = iflot~vstelle
+    INNER JOIN iflotv ON iflot~tplnr = iflotv~tplnr
+    INNER JOIN eanl ON evbs~vstelle = eanl~vstelle
+    WHERE evbs~loevm = ' '
+      AND iflot~loevm <> 'X'
+      AND iflotv~loevm = 'X'
+      AND iflotv~aedat < @lv_past2yr.
+
+  WRITE: / 'Rule 3 (2yr): Demolished >2yr with Meter (RTM)'.
+  WRITE: / '  Count: ', lv_r3_2yr_count.
+  SKIP.
+
+*============================================================
+*  TOTAL PREMISE COMPARISON
+*============================================================
+
+  DATA(lv_total_7yr) = lv_r1_count + lv_r2_7yr_count + lv_r3_7yr_count.
+  DATA(lv_total_2yr) = lv_r1_count + lv_r2_2yr_count + lv_r3_2yr_count.
+
+  SKIP.
   WRITE: / '============================================================'.
   WRITE: / '                    SUMMARY'.
   WRITE: / '============================================================'.
-  WRITE: / 'Rule 1 (Active Premise):      ', lv_r1_count.
-  WRITE: / 'Rule 2 (Recent Changes):      ', lv_r2_count.
-  WRITE: / 'Parent Premise:               ', lv_parent_count.
-  WRITE: / 'Total Active Premise:         ', lv_total_premise.
+  WRITE: / '                    | 7-Year (Program) | 2-Year (RTM) |'.
+  WRITE: / '-----------------------------------------------------------'.
+  WRITE: / 'Rule 1 (Active):     | ', lv_r1_count, '          | ', lv_r1_count, ' |'.
+  WRITE: / 'Rule 2 (Demolished): | ', lv_r2_7yr_count, '          | ', lv_r2_2yr_count, ' |'.
+  WRITE: / 'Rule 3 (+Meter):     | ', lv_r3_7yr_count, '            | ', lv_r3_2yr_count, ' |'.
+  WRITE: / '-----------------------------------------------------------'.
+  WRITE: / 'TOTAL PREMISE:       | ', lv_total_7yr, '         | ', lv_total_2yr, ' |'.
+  WRITE: / '============================================================'.
+  WRITE: / 'GAP: Program extracts ', lv_total_7yr - lv_total_2yr, ' more premise than RTM requires'.
   WRITE: / '============================================================'.
 
 END-OF-SELECTION.
