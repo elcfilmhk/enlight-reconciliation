@@ -24,17 +24,27 @@ START-OF-SELECTION.
       calc_date = lv_pastdate.
 
   WRITE: / '============================================================'.
-  WRITE: / '   ZISCS_MIGRATION_DEVICE Validation (UD1K936264)'.
+  WRITE: / '  ZISCS_MIGRATION_DEVICE Validation (UD1K936264)'.
   WRITE: / '============================================================'.
   WRITE: / 'Key Date:  ', p_keydat, '  Past Date: ', lv_pastdate.
   WRITE: / '============================================================'.
   SKIP.
 
-* Rule 1: All meters in service (EGERH with no inactive status)
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_r1_count)
+*============================================================
+*  DEVICE COUNT (Rule 1 + Rule 2)
+*  - AMI collectors are counted as DEVICE (not device config)
+*  - Device in store = non-SCRAP/LOST/LTDA status (EGERH.BIS='00000000')
+*============================================================
+
+  WRITE: / '--- DEVICE COUNT ---'.
+
+* Rule 1: All meters in service (including AMI collectors)
+* Device in store = EGERH.BIS='00000000' with no inactive status
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_dev_r1_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
       AND NOT EXISTS (
         SELECT 1 FROM jest
         INNER JOIN tj30t ON jest~stat = tj30t~estat
@@ -45,17 +55,18 @@ START-OF-SELECTION.
           AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
       ).
 
-  WRITE: / 'Rule 1: All Meters in Service'.
-  WRITE: / '  Count: ', lv_r1_count.
+  WRITE: / 'Rule 1: DEVICE - Meters in Service (incl. AMI collectors)'.
+  WRITE: / '  Count: ', lv_dev_r1_count.
   SKIP.
 
-* Rule 2: Inactive meters (status SCRA/LOST/LTDA within lookback period)
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_r2_count)
+* Rule 2: Inactive meters (SCRA/LOST/LTDA within lookback)
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_dev_r2_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
     INNER JOIN jest ON equi~objnr = jest~objnr
     INNER JOIN tj30t ON jest~stat = tj30t~estat
     WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
       AND jest~inact <> 'X'
       AND tj30t~stsma = 'ZCLPP'
       AND tj30t~spras = 'E'
@@ -63,15 +74,30 @@ START-OF-SELECTION.
       AND jest~erdat >= @lv_pastdate
       AND jest~erdat <= @p_keydat.
 
-  WRITE: / 'Rule 2: Inactive Meters (within lookback)'.
-  WRITE: / '  Count: ', lv_r2_count.
+  WRITE: / 'Rule 2: DEVICE - Inactive Meters (within lookback)'.
+  WRITE: / '  Count: ', lv_dev_r2_count.
   SKIP.
 
-* Device Config ID count (Rule 1 + Rule 2 config)
-  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_config_count)
+* Total Device Count (Rule 1 + Rule 2)
+  DATA(lv_dev_total) = lv_dev_r1_count + lv_dev_r2_count.
+  WRITE: / 'Total DEVICE Count (Rule 1 + Rule 2): ', lv_dev_total.
+  SKIP.
+
+*============================================================
+*  DEVICE CONFIGURATION COUNT
+*  - Measuring Component (MC), Reg ID, Interval Profile, Reg Factor
+*  - AMI collectors excluded from Device Config
+*============================================================
+
+  WRITE: / '--- DEVICE CONFIGURATION COUNT ---'.
+
+* Device Config Rule 1: Config for meters in service
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r1_count)
     FROM egerh
     INNER JOIN equi ON egerh~equnr = equi~equnr
-    WHERE NOT EXISTS (
+    WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
+      AND NOT EXISTS (
         SELECT 1 FROM jest
         INNER JOIN tj30t ON jest~stat = tj30t~estat
         WHERE jest~objnr = equi~objnr
@@ -81,27 +107,88 @@ START-OF-SELECTION.
           AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
       ).
 
-  WRITE: / 'Device Config ID Count (Total)'.
-  WRITE: / '  Count: ', lv_config_count.
+  WRITE: / 'Config Rule 1: Config ID for Meters in Service'.
+  WRITE: / '  Count: ', lv_cfg_r1_count.
   SKIP.
 
-* Total Device Count
-  SELECT COUNT(DISTINCT equnr) INTO @DATA(lv_total_device)
-    FROM equi
-    WHERE equnr IS NOT NULL.
+* Device Config Rule 2: Config for inactive meters
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_cfg_r2_count)
+    FROM egerh
+    INNER JOIN equi ON egerh~equnr = equi~equnr
+    INNER JOIN jest ON equi~objnr = jest~objnr
+    INNER JOIN tj30t ON jest~stat = tj30t~estat
+    WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
+      AND jest~inact <> 'X'
+      AND tj30t~stsma = 'ZCLPP'
+      AND tj30t~spras = 'E'
+      AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      AND jest~erdat >= @lv_pastdate
+      AND jest~erdat <= @p_keydat.
 
-  WRITE: / 'Total Device Count (EQUI)'.
-  WRITE: / '  Count: ', lv_total_device.
+  WRITE: / 'Config Rule 2: Config ID for Inactive Meters'.
+  WRITE: / '  Count: ', lv_cfg_r2_count.
   SKIP.
 
-* Summary
+* MC_SYNC_01: Measuring Component, Reg ID, Interval Profile, Reg Factor
+  SELECT COUNT(DISTINCT egerh~equnr) INTO @DATA(lv_mc_sync1_count)
+    FROM egerh
+    INNER JOIN equi ON egerh~equnr = equi~equnr
+    WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
+      AND egerh~logiknr IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM jest
+        INNER JOIN tj30t ON jest~stat = tj30t~estat
+        WHERE jest~objnr = equi~objnr
+          AND tj30t~stsma = 'ZCLPP'
+          AND tj30t~spras = 'E'
+          AND jest~inact <> 'X'
+          AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      ).
+
+  WRITE: / 'MC_SYNC_01: MC, Reg ID, Interval Profile, Reg Factor'.
+  WRITE: / '  Count: ', lv_mc_sync1_count.
+  SKIP.
+
+* MC_SYNC_02: MC, Reg Group, Interval Profile
+  SELECT COUNT(DISTINCT egerh~logiknr) INTO @DATA(lv_mc_sync2_count)
+    FROM egerh
+    WHERE egerh~bis = '00000000'
+      AND egerh~equnr IN @s_equ
+      AND egerh~logiknr IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM equi
+        INNER JOIN jest ON equi~objnr = jest~objnr
+        INNER JOIN tj30t ON jest~stat = tj30t~estat
+        WHERE equi~equnr = egerh~equnr
+          AND tj30t~stsma = 'ZCLPP'
+          AND tj30t~spras = 'E'
+          AND jest~inact <> 'X'
+          AND tj30t~txt04 IN ('SCRA', 'LOST', 'LTDA')
+      ).
+
+  WRITE: / 'MC_SYNC_02: MC, Reg Group, Interval Profile'.
+  WRITE: / '  Count: ', lv_mc_sync2_count.
+  SKIP.
+
+*============================================================
+*  SUMMARY
+*============================================================
+
   WRITE: / '============================================================'.
   WRITE: / '                    SUMMARY'.
   WRITE: / '============================================================'.
-  WRITE: / 'Rule 1 (Meters in Service): ', lv_r1_count.
-  WRITE: / 'Rule 2 (Inactive Meters):   ', lv_r2_count.
-  WRITE: / 'Device Config ID:            ', lv_config_count.
-  WRITE: / 'Total Devices:               ', lv_total_device.
+  WRITE: / 'DEVICE (AMI collectors included)'.
+  WRITE: / '  Rule 1 (Meters in Service):     ', lv_dev_r1_count.
+  WRITE: / '  Rule 2 (Inactive Meters):       ', lv_dev_r2_count.
+  WRITE: / '  Total DEVICE:                    ', lv_dev_total.
+  WRITE: / '-----------------------------------------------------------'.
+  WRITE: / 'DEVICE CONFIGURATION'.
+  WRITE: / '  Config Rule 1 (Meters in Svc):   ', lv_cfg_r1_count.
+  WRITE: / '  Config Rule 2 (Inactive):        ', lv_cfg_r2_count.
+  WRITE: / '  MC_SYNC_01:                      ', lv_mc_sync1_count.
+  WRITE: / '  MC_SYNC_02:                      ', lv_mc_sync2_count.
   WRITE: / '============================================================'.
 
 END-OF-SELECTION.
