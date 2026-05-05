@@ -378,7 +378,7 @@ enlight-reconciliation/
 |--------|--------------|-----------------|------------|--------|
 | fuel_switching | ✅ UD1K936725 | ✅ 879362238 | ✅ Created | ✅ Validation ABAP created |
 | eeus | ⏳ | ⏳ | ⏳ | Pending |
-| fit_rate | ⏳ | ⏳ | ⏳ | Pending |
+| fit_rate | ✅ UD1K936725 | ✅ 711458893 | ✅ | Done (bugs found) |
 
 ---
 
@@ -486,7 +486,7 @@ When any migration program logic changes:
 3. write_csv uses backslash path separator `p_file\{lv_filename}` which may not work on Unix systems
 
 **RTM Documentation Gap:**
-- No Data Extraction TD found in docs_master.db for fit_rate
+- RTM Doc: TD-Service Agreement/Service Point-Extract (page 711458893) - Fit Rate is sub-object under Service Point
 - Related docs exist in CXTTS1/CI spaces under "Renewable Energy (FiT)" branding
 - Program uses zis_eec_reappln + zis_eec_resysmtr tables
 
