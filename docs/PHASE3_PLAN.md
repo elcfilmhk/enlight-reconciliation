@@ -444,6 +444,46 @@ When any migration program logic changes:
 
 ---
 
+#### 4.2 Fit Rate (fit_rate)
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_fit_rate` |
+| Latest UD | UD1K936725 |
+| RTM Doc (Extract) | Not found under standard TD-* naming in docs_master.db |
+| Validation Script | `ziscs_migration_fit_rate_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created |
+
+**Program Rules (UD1K936501/505/530/725):**
+- **Rule 1**: Completed FIT Applications (re_app_status = 'CO' OR '23')
+  - Source: `zis_eec_reappln` LEFT JOIN `zis_eec_resysmtr` on re_app_no
+  - Filtered by premise list from file or S_PREMI selection (gt_stg hash table)
+  - Dedup: re_app_no
+- **Rule 2**: Cancelled FIT Applications (re_app_status = 'CA', app_rec_date >= pastdate)
+  - Same source tables as Rule 1
+  - Filter: app_rec_date >= keydate - p_month months
+  - Dedup: re_app_no
+
+**Key Observations:**
+- 4 UDs: UD1K936501 (perf fix), UD1K936505 (date fix), UD1K936530 (file fix), UD1K936725 (csv separator ;)
+- Simpler program than SA migration - only 2 rules, no Rule 3/4
+- gt_stg is HASHED TABLE for O(1) premise lookup performance
+- Performance fix (Log#0001) removed FOR ALL ENTRIES, uses READ TABLE gt_stg instead
+- p_month lookback applies ONLY to cancelled applications (Rule 2)
+- Completed applications (Rule 1) have NO date restriction
+
+**Bugs Found:**
+1. `lt_chunk` is declared but never populated - get_fit_rate references lt_chunk-premise in commented WHERE clause
+2. Both Rule1 and Rule2 file processing merge into same gt_premise_rule1 (no separate tracking)
+3. write_csv uses backslash path separator `p_file\{lv_filename}` which may not work on Unix systems
+
+**RTM Documentation Gap:**
+- No Data Extraction TD found in docs_master.db for fit_rate
+- Related docs exist in CXTTS1/CI spaces under "Renewable Energy (FiT)" branding
+- Program uses zis_eec_reappln + zis_eec_resysmtr tables
+
+---
+
 ### Phase 5b: Unmetered Service Point
 | Item | Details |
 |------|---------|
