@@ -11,7 +11,7 @@ Validate all ENLIGHT migration programs (ZISCS_MIGRATION_*) against **RTM Data E
 | Phase 1 | accounts | ✅ Done |
 | Phase 2 | device, premise, servicepoint | ✅ Done |
 | **Phase 3** | **sa, financial_tran, adjustment, contractoption, payplan** | 📋 **In Progress** |
-| Phase 4 | eeus, fuel_switching, fit_rate |
+| Phase 4 | eeus, fuel_switching, fit_rate | 📋 **In Progress** |
 | Phase 5 | alipay_wechat, read_object, estimate_read, unmetered_sp |
 
 ---
@@ -131,6 +131,39 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 | Validation Script | `ziscs_migration_payplan_validation_abap.txt` |
 | Assigned Agent | jbot4 |
 | Status | ✅ Validation ABAP created |
+
+---
+
+## Phase 5: Estimate Read & Read Object (📋 In Progress)
+
+### 5.1 Estimate Read
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_estimate_read` |
+| Latest UD | UD1K936281 (11.11.2025) |
+| RTM Doc (Extract) | TD-Read Data-Extract & Cleanse (682263269) |
+| Validation Script | `ziscs_migration_estimate_read_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created |
+
+**Program Rules:**
+- **Rule 1**: Estimate reading documents - count ABLBELNR from EABL where ADAT >= pastdate AND NOT EXISTS (same EQUNR with ADAT >= pastdate AND ISTABLART <> '03')
+- **Rule 2**: Estimate equipments - distinct EQUNR from Rule 1 results
+
+**Key Observations:**
+- Simple two-rule structure (no complex JOINs)
+- Only one table (EABL), no joins
+- UD1K935965 added p_keydat parameter (key date input)
+- UD1K936281 added p_month parameter (configurable lookback, default 14)
+- Exclusion: skip EQUNR if any actual reading (ISTABLART <> '03') exists in window
+- No CSV/file output - only WRITE to screen
+- **No bugs found** - logic is straightforward
+
+**RTM Alignment:**
+- TD-Read Data-Extract & Cleanse (682263269) defines extraction rules
+- estimate_read variant filters to only "estimate" readings
+- ISTABLART '03' = Actual reading, <> '03' = Estimate reading
+- Correctly excludes EQUNR with at least one actual reading in lookback window
 
 ---
 
@@ -310,6 +343,33 @@ When any migration program logic changes:
 
 ---
 
-*Last Updated: 2026-05-05*
+### Phase 4: EEUS, Fuel Switching, Fit Rate (📋 In Progress)
+
+#### 4.1 Electrical Equipment Upgrade Scheme (EEUS)
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_eeus` |
+| Latest UD | UD1K936581 |
+| RTM Doc (Extract) | TD-Electrical Equipment Upgrade Scheme (EEUS)-Extract & Cleanse (page 1307869185) |
+| Validation Script | `ziscs_migration_eeus_validation_abap.txt` |
+| Assigned Agent | subagent |
+| Status | ✅ Validation ABAP created |
+
+**Program Rules (UD1K936581 - Initial Implementation):**
+- **RTM1**: All records from `ziscs_eeus_hdr` where status IN ('CO', 'CA', '17')
+- Count by status: CO (Completed), CA (Cancelled), 17 (Rebate Approved)
+- Dedup key: eeus_appln + vkont (adjacent duplicates)
+- rtm_no hardcoded to 'RTM1'
+
+**Key Observations:**
+- Only one UD (initial implementation, 05.03.2026)
+- No configurable lookback period
+- Single rule only (RTM1 status counts)
+- No additional RTM rules implemented
+- Program has not been updated since initial release
+
+---
+
+*Last Updated: 2026-05-06*
 *Maintained by: JBot Main Agent*
 *Repo: https://github.com/elcfilmhk/enlight-reconciliation*
