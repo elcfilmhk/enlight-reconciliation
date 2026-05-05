@@ -299,12 +299,12 @@ Update this file with:
 
 ## Agent Assignment
 
-| Agent | Phase 3 Objects | Responsibility |
-|-------|-----------------|----------------|
-| main | sa, financial_tran | Program analysis, validation creation |
-| work | adjustment, payplan | Program analysis, validation creation |
-| jbot3 | contractoption | Program analysis, validation creation |
-| jbot4 | RTM docs comparison | Data Extraction comparison |
+| Agent | Phase 3 Objects | Phase 4 Objects | Responsibility |
+|-------|-----------------|-----------------|----------------|
+| main | sa, financial_tran | **fuel_switching** | Program analysis, validation creation |
+| work | adjustment, payplan | eeus | Program analysis, validation creation |
+| jbot3 | contractoption | fit_rate | Program analysis, validation creation |
+| jbot4 | RTM docs comparison | — | Data Extraction comparison |
 
 ---
 
@@ -371,6 +371,14 @@ enlight-reconciliation/
 | adjustment | ✅ UD1K936545 | ✅ Created | ⏳ | Pending |
 | contractoption | ✅ initial v1 | ✅ 778043968 | ✅ Created | ⏳ RTM comparison pending |
 | payplan | ✅ UD1K936403 | ✅ Created | ✅ RTM 943064714 | Mock4, Log#0001 adds RTM3/RTM5, blart<>IP filter |
+
+### Phase 4 In Progress
+
+| Object | Program Found | RTM Extract Doc | Validation | Status |
+|--------|--------------|-----------------|------------|--------|
+| fuel_switching | ✅ UD1K936725 | ✅ 879362238 | ✅ Created | ✅ Validation ABAP created |
+| eeus | ⏳ | ⏳ | ⏳ | Pending |
+| fit_rate | ⏳ | ⏳ | ⏳ | Pending |
 
 ---
 
