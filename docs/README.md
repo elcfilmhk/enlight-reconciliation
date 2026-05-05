@@ -2,8 +2,19 @@
 
 Validation scripts and comparison tools for ENLIGHT migration programs (ZISCS_MIGRATION_*).
 
+## ⚠️ IMPORTANT: Always Use Data Extraction TD
+
+**We compare against Data Extraction TD docs, NOT Transform & Load TD docs.**
+
+| TD Type | Keyword | Purpose |
+|---------|---------|---------|
+| **Data Extraction** ✅ | `Extract`, `DataExtraction` | Source data extraction rules - **USE THIS** |
+| Transform & Load ❌ | `Transform&Load` | Target conversion logic - Reference only |
+
+---
+
 ## Purpose
-- Validate migration program outputs against RTM documentation
+- Validate migration program outputs against **Data Extraction** RTM documentation
 - Create ABAP validation reports for SAP SE38
 - Compare program results vs validation data
 - Identify missing/mismatch CA-BP with root cause diagnosis
@@ -13,29 +24,58 @@ Validation scripts and comparison tools for ENLIGHT migration programs (ZISCS_MI
 ```
 enlight-reconciliation/
 ├── docs/
-│   ├── README.md              # This file
-│   ├── PHASE3_PLAN.md         # Phase-by-phase project plan
+│   ├── README.md                # This file
+│   ├── PHASE3_PLAN.md            # Phase-by-phase project plan
 │   └── ziscs_migration_<obj>_validation_template.md
 ├── scripts/
 │   ├── ziscs_migration_accounts_validation_abap.txt    # ABAP for SE38
 │   ├── ziscs_migration_device_validation_abap.txt
 │   ├── ziscs_migration_premise_validation_abap.txt
 │   ├── ziscs_migration_sp_mock3_validation_abap.txt
-│   ├── compare_accounts.ipynb          # Jupyter for comparison
-│   ├── compare_accounts.py              # CLI comparison tool
-│   └── compare_rules_detail.py          # Rule-by-rule detail
-└── validation_reports/                  # Generated outputs
+│   ├── ziscs_migration_sa_validation_abap.txt
+│   ├── compare_accounts.ipynb              # Jupyter for comparison
+│   ├── compare_accounts.py                 # CLI comparison tool
+│   └── compare_rules_detail.py             # Rule-by-rule detail
+└── validation_reports/                     # Generated outputs
 ```
 
 ## Phase Status
 
-| Phase | Objects | Status | Notes |
-|-------|---------|--------|-------|
-| 1 | accounts | ✅ Done | UD1K936711, 82% RTM coverage |
-| 2 | device, premise, servicepoint | ✅ Done | UD1K936264/UD1K936723 |
-| 3 | sa, financial_tran, adjustment, contractoption, payplan | 📋 In Progress | Assigned to main, work, jbot3, jbot4 |
+| Phase | Objects | Status | RTM Extract Doc |
+|-------|---------|--------|----------------|
+| 1 | accounts | ✅ Done | TD-Account_DataExtraction (633733126) |
+| 2 | device, premise, servicepoint | ✅ Done | TD-Device_DataExtraction, TD-Premise_DataExtraction, TD-ServicePoint_DataExtraction |
+| 3 | sa, financial_tran, adjustment, contractoption, payplan | 📋 In Progress | See PHASE3_PLAN.md |
 | 4 | eeus, fuel_switching, fit_rate | ⏳ Pending |
 | 5 | alipay_wechat, read_object, estimate_read, unmetered_sp | ⏳ Pending |
+
+## All Data Extraction RTM Documents (ENLIGHT)
+
+```
+TD-Account_DataExtraction&Cleansing-Customer-DM-04
+TD-ADJUSTMENT Primary-Extract & Cleanse-CUSTOMER-CUST_IT2_
+TD-Billing Data-Bill Segment-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_05
+TD-Billing Data-Bill-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_04
+TD-Contract Option Type (SSR and C&I)-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_09
+TD-Customer Contact-Extract & Cleanse-CUSTOMER-CUST_IT4_CON
+TD-Device & Device Config_DataExtraction&Cleansing-Customer-DM-01
+TD-Electrical Equipment Upgrade Scheme (EEUS) -Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
+TD-Energy Audit-Extract& Cleanse-CUSTOMER-CUST_DM_CX_01
+TD-Financial Transaction (FT)-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_11
+TD-Fuel Switching- Extract& Cleanse-CUSTOMER-CUST-CUST_DM_CX_03
+TD-Measuring Component_DataExtraction&Cleansing-Customer-DM-05
+TD-Payment Data-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_06
+TD-PayPlan-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
+TD-Person_DataExtraction&Cleansing-Customer-DM-03
+TD-Premise_DataExtraction&Cleansing-Customer-DM-02
+TD-Read Data-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_02
+TD-SA Deposit-Extract & Cleanse-CUSTOMER-CUST_IT4_CONV_04
+TD-Service Agreement-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_03
+TD-Service Agreement/Service Point-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_03
+TD-Service Point_DataExtraction&Cleansing-Customer-DM-06
+TD-Unmetered & Public Lighting-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
+TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
+```
 
 ## How to Use
 
@@ -61,11 +101,6 @@ python compare_rules_detail.py program.csv --check <CA_NUMBER>
 Output shows:
 - Which rule the CA belongs to (or "NOT FOUND")
 - If missing, indicates COUNTING_PROGRAM vs VALIDATION_PROBLEM
-
-## Documentation
-
-- [PHASE3_PLAN.md](docs/PHASE3_PLAN.md) - Detailed project plan with agent assignments
-- [Comparison Guide](scripts/compare_accounts.ipynb) - Jupyter notebook for rule-by-rule comparison
 
 ## Agent Assignments
 
