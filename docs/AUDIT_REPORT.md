@@ -12,12 +12,10 @@
 | Category | Total | ✅ Complete | ⚠️ Issues | ❌ Missing/Broken |
 |----------|-------|-----------|-----------|-----------------|
 | Migration Objects | 17 | 10 | 5 | 2 |
-| Validation ABAPs | 17 | 12 | 3 | **1** |
+| Validation ABAPs | 17 | 12 | 3 | 2 |
 | RTM Doc References | 20 | 17 | 2 | 1 |
 
-**Overall Status:** 🟡 **MOSTLY COMPLETE — 1 remaining critical gap (deposit validation)**
-
-*Updated May 7, 2026: sp_mock3 validation confirmed EXISTS (169 lines)*
+**Overall Status:** 🟡 **PARTIALLY COMPLETE — Critical gaps in 5 objects, 2 missing validations**
 
 ---
 
@@ -30,7 +28,7 @@
 | accounts | UD1K936281 | UD1K936477 ⚠️ | ✅ 334 lines | ✅ | ⚠️ Plan stale — +4 UDs behind |
 | device | UD1K936264 | UD1K936433 ⚠️ | ✅ 193 lines | ✅ | ⚠️ Plan stale — +2 UDs behind |
 | premise | UD1K936264 | UD1K936264 | ✅ 169 lines | ✅ | ✅ OK |
-| servicepoint | UD1K936723 | UD1K936723 | ✅ **169 lines** | ✅ | ✅ **FIXED - sp_mock3 validation exists** |
+| servicepoint | UD1K936723 | UD1K936723 | ⚠️ **WRONG FILE** | ✅ | 🔴 CRITICAL — Validates old `servicepoint_1` (UD1K936202), NOT sp_mock3 (UD1K936723) |
 
 ### 2.2 Phase 3 (Contract & Financial)
 
@@ -64,11 +62,14 @@
 
 ## 3. Critical Findings
 
-### 🔴 CRITICAL-1: ~~Servicepoint Validation Targets Wrong Program~~ ✅ RESOLVED
-- ~~Finding:~~ **FINDING REMOVED** — sp_mock3 validation EXISTS (169 lines)
-- ~~Impact:~~ **RESOLVED** — File: `ziscs_migration_sp_mock3_validation_abap.abap`
-- ~~Recommendation:~~ **COMPLETE** — Validation already exists
-- **Status:** ✅ CLOSED (May 7, 2026)
+### 🔴 CRITICAL-1: Servicepoint Validation Targets Wrong Program
+- **Finding:** Plan says UD1K936723 (sp_mock3), but validation only covers `ziscs_migration_servicepoint_1` (UD1K936202)
+- **Impact:** sp_mock3 has 12 UDs (ending UD1K936723) — 8 UDs beyond what is validated
+- **Evidence:**
+  - `ziscs_migration_servicepoint_1`: 583 lines, UD1K935967–UD1K936202
+  - `ziscs_migration_sp_mock3`: 1028 lines, UD1K935967–UD1K936723
+  - Validation file is only 61 lines referencing UD1K936202
+- **Recommendation:** Create validation for `ziscs_migration_sp_mock3` (UD1K936723)
 
 ### 🔴 CRITICAL-2: Deposit Object Has No Validation
 - **Finding:** Zero validation ABAP exists for any deposit program variant
@@ -155,51 +156,31 @@ enlight-reconciliation/
 
 ## 8. Recommendations (Priority Order)
 
-| Priority | Action | Object | Status |
-|----------|--------|--------|--------|
-| **P1** | ~~Create validation for deposit (mock4, UD1K936447)~~ | deposit | 🔴 STILL MISSING |
-| ~~P1~~ | ~~Create validation for sp_mock3 (UD1K936723)~~ | servicepoint | ✅ **RESOLVED** (169 lines) |
-| **P1** | Update plan: `financial_tran` → `ziscs_migration_fin_tran_m4` | financial_tran | 📋 TODO |
-| **P2** | Update accounts validation for UD1K936477 | accounts | 📋 TODO |
-| **P2** | Resolve deposit RTM doc (TBD) | deposit | 📋 TODO |
-| **P2** | Fix fuel_switching UD in plan (UD1K936354) | fuel_switching | 📋 TODO |
-| **P3** | Create `validation_reports/` directory | repo | 📋 TODO |
-| **P3** | Separate bug register from PHASE3_PLAN.md | process | 📋 TODO |
-| **P3** | Fix known bugs (alipay_wechat, read_object) | TB88379 | 📋 TODO |
+| Priority | Action | Object |
+|----------|--------|--------|
+| **P1** | Create validation for deposit (mock4, UD1K936447) | deposit |
+| **P1** | Create validation for sp_mock3 (UD1K936723) | servicepoint |
+| **P1** | Update plan: `financial_tran` → `ziscs_migration_fin_tran_m4` | financial_tran |
+| **P2** | Update accounts validation for UD1K936477 | accounts |
+| **P2** | Resolve deposit RTM doc (TBD) | deposit |
+| **P2** | Fix fuel_switching UD in plan (UD1K936354) | fuel_switching |
+| **P3** | Create `validation_reports/` directory | repo |
+| **P3** | Separate bug register from PHASE3_PLAN.md | process |
+| **P3** | Fix known bugs (alipay_wechat, read_object) | TB88379 |
 
 ---
 
 ## 9. Conclusion
 
-**✅ Progress made since audit (May 7, 2026):**
-- sp_mock3 validation confirmed EXISTS (169 lines)
+**Solid foundation, critical gaps remain.** The project has a well-structured process and 10/17 objects are properly validated. However:
 
-**Remaining critical gaps:**
-1. 🔴 **deposit validation** — STILL MISSING (Phase 3 critical)
-2. financial_tran program name needs fix in PHASE3_PLAN.md
-3. 3 plan entries have stale UDs
-4. 5 known bugs await TB88379 fixes
+1. **deposit has zero validation** — a Phase 3 critical object
+2. **servicepoint production** (sp_mock3 UD1K936723) is being validated against the wrong version
+3. **3 plan entries** have stale UDs that don't reflect current program state
+4. **5 known bugs** documented but never fixed
 
-**Status:** 🟡 PARTIALLY COMPLETE (1 critical resolved, 1 remains)
+These must be resolved before UAT begins.
 
 ---
 
 *Audited by: Hermes Agent | 2026-05-06*
-
----
-
-## 📝 Auditor Follow-up (May 7, 2026)
-
-**Fact-Check Performed:** Yes
-
-**Corrections Made:**
-1. ✅ sp_mock3 validation EXISTS (169 lines) — CRITICAL-1 marked RESOLVED
-2. ✅ deposit validation: KAN-367 created, ** reassigned to jbot3** for development
-3. 📋 financial_tran program name fix pending PHASE3_PLAN.md update
-
-**Action Items (Updated):**
-- KAN-367: deposit validation → **jbot3** (not TB88379)
-
-- Remaining fixes to be scheduled separately
-
-**All records updated. **

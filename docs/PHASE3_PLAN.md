@@ -10,7 +10,7 @@ Validate all ENLIGHT migration programs (ZISCS_MIGRATION_*) against **RTM Data E
 |-------|---------|--------|
 | Phase 1 | accounts | ✅ Done |
 | Phase 2 | device, premise, servicepoint | ✅ Done |
-| **Phase 3** | **sa, financial_tran, adjustment, contractoption, payplan** | 📋 **In Progress** |
+| Phase 3 | **sa, deposit, financial_tran, adjustment, contractoption, payplan** | 📋 **In Progress** |
 | **Phase 4** | **fuel_switching**, eeus, fit_rate | 📋 **In Progress** |
 | Phase 5 | alipay_wechat, read_object, estimate_read, unmetered_sp |
 
@@ -29,8 +29,9 @@ Validate all ENLIGHT migration programs (ZISCS_MIGRATION_*) against **RTM Data E
 ### Phase 3 Data Extraction Docs
 | Object | Data Extraction TD | Page ID |
 |--------|-------------------|---------|
-| **sa** | TD-SA Deposit-Extract & Cleanse-CUSTOMER-CUST_IT4_CONV_04 | 945258700 |
 | **sa** | TD-Service Agreement-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_03 | 707297676 |
+| **sa-deposit** | TD-SA Deposit-Extract & Cleanse-CUSTOMER-CUST_IT4_CONV_04 | 945258700 |
+| **deposit** | TD-CCS Deposit-Data Extraction-CUSTOMER-CUST_IT2_CONV_02 | TBD - search needed |
 | **financial_tran** | TD-Financial Transaction (FT)-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_11 | 906821764 |
 | **adjustment** | TD-ADJUSTMENT Primary-Extract & Cleanse-CUSTOMER-CUST_IT2_ | 835846145 |
 | **contractoption** | TD-Contract Option Type (SSR and C&I)-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_09 | 778043968 |
@@ -75,11 +76,27 @@ TD-Write Off-Extract & Cleanse-CUSTOMER-CUST_IT2_CONV_
 |------|---------|
 | Program | `ziscs_migration_sa` / `ziscs_migration_sa_mock3` / `ziscs_migration_sa_mock4` |
 | Latest UD | UD1K936697 |
-| RTM Doc (Extract) | TD-SA Deposit-Extract & Cleanse (945258700) / TD-Service Agreement-Extract & Cleanse (707297676) |
+| RTM Doc (Extract) | TD-Service Agreement-Extract & Cleanse (707297676) |
 | RTM Doc (Transform - ref only) | TD-SA Deposit-Transform&Load (958595075) |
-| Validation Script | `ziscs_migration_sa_validation_abap.txt` |
+| Validation Script | `ziscs_migration_sa_validation_abap.abap` |
 | Assigned Agent | main |
-| Status | ✅ SA Validation ABAP created (with bugs found) |
+| Status | ✅ SA Validation ABAP created (bugs found in Rules 2 & 4) |
+
+### 3.1.5 Deposit (deposit) - NEW SEPARATE OBJECT
+| Item | Details |
+|------|---------|
+| Program | `ziscs_migration_deposit_mock4` |
+| Latest UD | UD1K936447 (Log#0005) |
+| Transport UDs | UD1K936299, UD1K936307, UD1K936372, UD1K936384, UD1K936386, UD1K936447 |
+| Author | TB88379 |
+| Description | Program to display the count of PaymentDoc based on different filter criteria |
+| RTM Doc (Extract) | TD-CCS Deposit-Data Extraction (search needed) |
+| RTM Doc (Transform - ref only) | TD-SA Deposit-Transform&Load (958595075) |
+| Validation Script | `ziscs_migration_deposit_validation_abap.abap` |
+| Assigned Agent | main |
+| Status | ⏳ **Needs validation** |
+
+**Note:** SA Deposit and general Deposit are SEPARATE objects. SA Deposit is part of Service Agreement (TD-SA Deposit-Extract 945258700), while general Deposit uses `ziscs_migration_deposit_mock4` program.
 
 ### 3.2 Financial Transaction (financial_tran)
 | Item | Details |
